@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** The shape admin_stats() returns (see supabase/admin.sql). */
 export type Stats = {
   today: string;
+  /** The window (in days) the activity chart and heatmap cover. */
+  days: number;
   totals: {
     members: number;
     admins: number;
@@ -54,8 +56,17 @@ export type Stats = {
   }[];
 };
 
-export async function getStats(supabase: SupabaseClient) {
-  const { data, error } = await supabase.rpc("admin_stats");
+/** Time windows the dashboard offers for its activity chart and heatmap. */
+export const RANGES = [7, 30, 90] as const;
+export type Range = (typeof RANGES)[number];
+
+export function parseRange(value: string | string[] | undefined): Range {
+  const n = Number(Array.isArray(value) ? value[0] : value);
+  return (RANGES as readonly number[]).includes(n) ? (n as Range) : 30;
+}
+
+export async function getStats(supabase: SupabaseClient, days: Range = 30) {
+  const { data, error } = await supabase.rpc("admin_stats", { p_days: days });
   if (error) throw new Error(`admin_stats failed: ${error.message}`);
   return data as Stats;
 }

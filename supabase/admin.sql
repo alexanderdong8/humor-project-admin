@@ -283,7 +283,11 @@ grant execute on function public.admin_update_caption(uuid, text) to authenticat
 -- 4. Dashboard statistics, computed in one round trip.
 ------------------------------------------------------------------------------
 
-create or replace function public.admin_stats()
+-- p_days (7–365) sets the window for the activity chart and the heatmap; the
+-- other figures are all-time.
+drop function if exists public.admin_stats();
+
+create or replace function public.admin_stats(p_days integer default 30)
 returns jsonb
 language plpgsql
 stable
@@ -292,6 +296,8 @@ set search_path = ''
 as $$
 declare
   v_today date := (now() at time zone 'America/New_York')::date;
+  v_days integer := least(greatest(coalesce(p_days, 30), 7), 365);
+  v_since timestamptz := ((v_today - (v_days - 1))::timestamp at time zone 'America/New_York');
   v_result jsonb;
 begin
   if not public.is_superadmin() then
@@ -307,6 +313,7 @@ begin
   )
   select jsonb_build_object(
     'today', v_today,
+    'days', v_days,
     'totals', jsonb_build_object(
       'members', (select count(*) from public.profiles),
       'admins', (select count(*) from public.profiles where is_superadmin),
@@ -322,7 +329,7 @@ begin
       'jokes', (select count(*) from public.jokes),
       'themes', (select count(*) from public.daily_themes)
     ),
-    -- Last 30 New York days: uploads, votes of every kind, and sign-ups.
+    -- The last p_days New York days: uploads, votes of every kind, and sign-ups.
     'activity', (
       select jsonb_agg(jsonb_build_object(
         'day', s.day::date,
@@ -330,7 +337,7 @@ begin
         'votes', coalesce(a.votes, 0),
         'signups', coalesce(p.signups, 0)
       ) order by s.day)
-      from generate_series(v_today - 29, v_today, interval '1 day') as s(day)
+      from generate_series(v_today - (v_days - 1), v_today, interval '1 day') as s(day)
       left join (
         select (created_at at time zone 'America/New_York')::date as day,
                count(*) filter (where kind = 'upload') as uploads,
@@ -342,14 +349,14 @@ begin
           from public.profiles group by 1
       ) p on p.day = s.day::date
     ),
-    -- Every action by weekday (1 = Monday) and hour, New York time.
+    -- Actions in the window by weekday (1 = Monday) and hour, New York time.
     'heatmap', (
       select coalesce(jsonb_agg(jsonb_build_object('dow', dow, 'hour', hour, 'n', n)), '[]'::jsonb)
       from (
         select extract(isodow from created_at at time zone 'America/New_York')::int as dow,
                extract(hour from created_at at time zone 'America/New_York')::int as hour,
                count(*) as n
-          from actions group by 1, 2
+          from actions where created_at >= v_since group by 1, 2
       ) h
     ),
     -- Which of the AI's four drafts won the caption battle.
@@ -455,5 +462,36 @@ begin
 end;
 $$;
 
-revoke execute on function public.admin_stats() from public, anon;
-grant execute on function public.admin_stats() to authenticated;
+revoke execute on function public.admin_stats(integer) from public, anon;
+grant execute on function public.admin_stats(integer) to authenticated;
+
+------------------------------------------------------------------------------
+-- 5. Promoting and demoting admins from the admin panel.
+--    Only a superadmin can call it, and nobody can remove their own access,
+--    so the panel can never end up with zero admins. (The guard trigger only
+--    stops the API roles; this function runs as its owner.)
+------------------------------------------------------------------------------
+
+create or replace function public.admin_set_superadmin(p_user uuid, p_value boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_superadmin() then
+    raise exception 'superadmins only' using errcode = '42501';
+  end if;
+  if p_user = (select auth.uid()) and not p_value then
+    raise exception 'you can''t remove your own admin access; ask another admin';
+  end if;
+
+  update public.profiles set is_superadmin = p_value where id = p_user;
+  if not found then
+    raise exception 'no such member';
+  end if;
+end;
+$$;
+
+revoke execute on function public.admin_set_superadmin(uuid, boolean) from public, anon;
+grant execute on function public.admin_set_superadmin(uuid, boolean) to authenticated;

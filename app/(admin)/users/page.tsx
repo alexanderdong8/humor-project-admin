@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { fullName, requireAdmin } from "@/lib/admin";
 import { formatDate, timeAgo } from "@/lib/format";
+import { AdminToggle } from "./admin-toggle";
 import ui from "@/components/ui.module.css";
 
 export const metadata: Metadata = { title: "Users" };
@@ -27,9 +28,9 @@ function countBy(rows: { user_id: string | null }[] | null) {
   return counts;
 }
 
-/** Read-only: members manage their own profiles in the main app. */
+/** Profiles are read-only here (members edit their own in the main app); admin access can be granted. */
 export default async function UsersPage(props: PageProps<"/users">) {
-  const { supabase } = await requireAdmin();
+  const { supabase, user } = await requireAdmin();
   const searchParams = await props.searchParams;
   const q = (first(searchParams.q) ?? "").trim().slice(0, 80);
   const role = first(searchParams.role) === "admins" ? "admins" : "all";
@@ -66,11 +67,11 @@ export default async function UsersPage(props: PageProps<"/users">) {
     <>
       <header className={ui.head}>
         <div>
-          <p className={ui.kicker}>Users · read only</p>
+          <p className={ui.kicker}>Users · read profiles · grant admin</p>
           <h1 className={ui.title}>Members</h1>
           <p className={ui.lede}>
-            Everyone with a profile. Members edit their own names and photos in Punchline; superadmin access is granted
-            only in the database.
+            Everyone with a profile. Members edit their own names and photos in Punchline. Use Make admin to give an
+            existing member access to Backstage.
           </p>
         </div>
       </header>
@@ -120,6 +121,9 @@ export default async function UsersPage(props: PageProps<"/users">) {
                   Remixes
                 </th>
                 <th scope="col">Profile updated</th>
+                <th scope="col">
+                  <span className="sr-only">Admin access</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -151,6 +155,9 @@ export default async function UsersPage(props: PageProps<"/users">) {
                     <td className={ui.num}>{votesFor(p.id)}</td>
                     <td className={ui.num}>{remixCounts.get(p.id) ?? 0}</td>
                     <td className={`${ui.nowrap} ${ui.muted}`}>{timeAgo(p.updated_at)}</td>
+                    <td className={ui.nowrap}>
+                      <AdminToggle userId={p.id} name={name} isAdmin={p.is_superadmin} isSelf={p.id === user.id} compact />
+                    </td>
                   </tr>
                 );
               })}

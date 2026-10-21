@@ -13,7 +13,7 @@ import {
 } from "@/components/charts";
 import { fullName } from "@/lib/admin";
 import { compact, formatDate, plural, winRate } from "@/lib/format";
-import { TREND_SOURCES, type Stats } from "@/lib/stats";
+import { RANGES, TREND_SOURCES, type Stats } from "@/lib/stats";
 import { MOODS, voiceLabel } from "@/lib/voices";
 import ui from "@/components/ui.module.css";
 import styles from "./overview.module.css";
@@ -36,12 +36,29 @@ export function OverviewView({ s }: { s: Stats }) {
   const ratings = t.upvotes + t.downvotes;
   const totalVotes = t.post_votes + t.duels + ratings;
 
-  // 30-day activity
-  const activity = s.activity.map((d) => ({
-    label: shortDay(d.day),
-    values: [d.uploads, d.votes],
-    tip: `${shortDay(d.day)}\n${plural(d.uploads, "upload")} · ${plural(d.votes, "vote")}${d.signups ? ` · ${plural(d.signups, "sign-up")}` : ""}`,
+  // Activity over the chosen window: daily columns, or weekly ones past a month
+  // (counted back from today, so the newest column is always this week).
+  const weekly = s.days > 31;
+  const buckets: { start: string; uploads: number; votes: number; signups: number }[] = [];
+  if (weekly) {
+    for (let end = s.activity.length; end > 0; end -= 7) {
+      const week = s.activity.slice(Math.max(0, end - 7), end);
+      buckets.unshift({
+        start: week[0].day,
+        uploads: week.reduce((a, d) => a + d.uploads, 0),
+        votes: week.reduce((a, d) => a + d.votes, 0),
+        signups: week.reduce((a, d) => a + d.signups, 0),
+      });
+    }
+  } else {
+    buckets.push(...s.activity.map((d) => ({ start: d.day, uploads: d.uploads, votes: d.votes, signups: d.signups })));
+  }
+  const activity = buckets.map((b) => ({
+    label: shortDay(b.start),
+    values: [b.uploads, b.votes],
+    tip: `${weekly ? `Week of ${shortDay(b.start)}` : shortDay(b.start)}\n${plural(b.uploads, "upload")} · ${plural(b.votes, "vote")}${b.signups ? ` · ${plural(b.signups, "sign-up")}` : ""}`,
   }));
+  const labelEvery = s.days <= 7 ? 1 : weekly ? 3 : 7;
   const busiest = s.activity.reduce((best, d) => (d.uploads + d.votes > best.uploads + best.votes ? d : best), s.activity[0]);
   const monthUploads = s.activity.reduce((a, d) => a + d.uploads, 0);
   const monthVotes = s.activity.reduce((a, d) => a + d.votes, 0);
@@ -108,6 +125,13 @@ export function OverviewView({ s }: { s: Stats }) {
           <p className={ui.lede}>Everything happening on Punchline, from the first upload to the latest vote.</p>
         </div>
         <div className={ui.actions}>
+          <nav className={ui.tabs} aria-label="Time range for the activity charts">
+            {RANGES.map((r) => (
+              <Link key={r} href={r === 30 ? "/" : `/?range=${r}`} aria-current={r === s.days ? "page" : undefined} scroll={false}>
+                {r} days
+              </Link>
+            ))}
+          </nav>
           <Link href="/media/new" className="btn btn-sun">
             + Create AI media
           </Link>
@@ -144,9 +168,9 @@ export function OverviewView({ s }: { s: Stats }) {
       <section className={`${ui.card} ${styles.block}`}>
         <div className={ui.cardHead}>
           <div>
-            <h2 className={ui.cardTitle}>The last 30 days</h2>
+            <h2 className={ui.cardTitle}>The last {s.days} days</h2>
             <p className={ui.cardSub}>
-              {plural(monthUploads, "upload")} and {plural(monthVotes, "vote")} (all kinds), by New York day.
+              {plural(monthUploads, "upload")} and {plural(monthVotes, "vote")} (all kinds), by New York {weekly ? "week" : "day"}.
             </p>
           </div>
           <Legend
@@ -156,7 +180,7 @@ export function OverviewView({ s }: { s: Stats }) {
             ]}
           />
         </div>
-        <StackedColumns columns={activity} series={["Uploads", "Votes"]} />
+        <StackedColumns columns={activity} series={["Uploads", "Votes"]} labelEvery={labelEvery} />
         {busiest && busiest.uploads + busiest.votes > 0 && (
           <p className={ui.insight}>
             Busiest day: <strong>{shortDay(busiest.day)}</strong>, with {plural(busiest.uploads, "upload")} and{" "}
@@ -174,11 +198,13 @@ export function OverviewView({ s }: { s: Stats }) {
           <div className={ui.cardHead}>
             <div>
               <h2 className={ui.cardTitle}>When the room is loudest</h2>
-              <p className={ui.cardSub}>Uploads, votes, and remixes by weekday and hour (New York time).</p>
+              <p className={ui.cardSub}>
+                Uploads, votes, and remixes in the last {s.days} days, by weekday and hour (New York time).
+              </p>
             </div>
           </div>
           {s.heatmap.length === 0 ? (
-            <div className={ui.empty}>No activity yet.</div>
+            <div className={ui.empty}>No activity in the last {s.days} days.</div>
           ) : (
             <>
               <Heatmap cells={s.heatmap} />

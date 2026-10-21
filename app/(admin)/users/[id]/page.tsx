@@ -5,6 +5,7 @@ import { StatTile } from "@/components/charts";
 import { fullName, requireAdmin } from "@/lib/admin";
 import { formatDate, formatDateTime, plural, timeAgo, winRate } from "@/lib/format";
 import { voiceLabel } from "@/lib/voices";
+import { AdminToggle } from "../admin-toggle";
 import ui from "@/components/ui.module.css";
 import styles from "../../media/media.module.css";
 
@@ -15,7 +16,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type Activity = { at: string; what: string; href?: string };
 
 export default async function UserPage(props: PageProps<"/users/[id]">) {
-  const { supabase } = await requireAdmin();
+  const { supabase, user } = await requireAdmin();
   const { id } = await props.params;
   if (!UUID.test(id)) notFound();
 
@@ -78,7 +79,7 @@ export default async function UserPage(props: PageProps<"/users/[id]">) {
             </span>
           )}
           <div>
-            <p className={ui.kicker}>Member · read only</p>
+            <p className={ui.kicker}>Member</p>
             <h1 className={ui.title}>{name}</h1>
           </div>
         </div>
@@ -91,6 +92,20 @@ export default async function UserPage(props: PageProps<"/users/[id]">) {
         <StatTile label="Remixes" value={remixes?.length ?? 0} />
         <StatTile label="Member since" value={formatDate(profile.created_at)} note={timeAgo(profile.created_at)} />
       </div>
+
+      <section className={`${ui.card} ${styles.section}`}>
+        <div className={ui.cardHead}>
+          <div>
+            <h2 className={ui.cardTitle}>Admin access</h2>
+            <p className={ui.cardSub}>
+              {profile.is_superadmin
+                ? `${name} is a superadmin and can use Backstage.`
+                : `${name} is a regular member. Making them a superadmin lets them into Backstage.`}
+            </p>
+          </div>
+        </div>
+        <AdminToggle userId={profile.id} name={name} isAdmin={profile.is_superadmin} isSelf={profile.id === user.id} />
+      </section>
 
       <div className={`${ui.grid2} ${styles.section}`}>
         <section className={ui.card}>

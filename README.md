@@ -4,10 +4,10 @@ The admin area for [Punchline](https://github.com/alexanderdong8/humor-project),
 
 ## What it does
 
-- **Overview** (`/`): statistics built from one database call (`admin_stats()`):
+- **Overview** (`/`): statistics built from one database call (`admin_stats(days)`), with a **7 / 30 / 90 day** control for the activity charts:
   - total votes cast (the hero number) and member, upload, caption, remix, and joke counts
-  - 30 days of uploads and votes
-  - a weekday-by-hour activity heatmap with its peak
+  - uploads and votes over the chosen window (daily columns, or weekly ones for 90 days)
+  - a weekday-by-hour activity heatmap for the same window, with its peak
   - **"Does the AI's first draft win?"**: which of Gemini's four captions won each caption battle, against the 25% you'd expect by chance
   - caption styles and their win rates, and remix moods with how often the remix beat the original
   - where daily themes came from (X vs. Google Trends) and which Gemini model answered
@@ -15,7 +15,7 @@ The admin area for [Punchline](https://github.com/alexanderdong8/humor-project),
   - daily-meme caption length vs. win rate, the most active members, and a hall of fame
 
   Every chart has hover/focus tooltips and a "Show the numbers" table.
-- **Users** (`/users`, `/users/[id]`), read only: every profile with uploads, votes cast, and remixes; search by name or email; a page per member with their profile, uploads, and an activity timeline.
+- **Users** (`/users`, `/users/[id]`): read every profile with uploads, votes cast, and remixes; search by name or email; open a page per member with their profile, uploads, and an activity timeline. **Make admin / Remove admin** promotes an existing member to superadmin, or removes it, after a confirm step.
 - **AI media** (`/media`, `/media/new`, `/media/[id]`), create / read / update / delete:
   - **Create:** pick an Imgflip meme template or upload a photo, let Gemini write four captions with the main app's prompt, edit them, choose the one that goes on the photo, then publish it or save it as a draft.
   - **Read:** browse and filter everything (live uploads, drafts, daily memes), and see each post's captions, vote record, prompt, and model.
@@ -29,11 +29,12 @@ Every route is behind Google sign-in **and** `profiles.is_superadmin = true`. It
 
 1. **`proxy.ts`** runs on every request. With no session it redirects to `/login`; signed in without the flag, to `/denied`. Only `/login` and `/auth/callback` are reachable signed out.
 2. **`requireAdmin()`** runs in the admin layout and every page, and `adminOrNull()` in every server action, so nothing renders or writes without the check.
-3. **The database** (`supabase/admin.sql`) is the real boundary. Superadmin read access comes from row-level security policies that call `is_superadmin()`. Writes go through `security definer` functions (`admin_create_generation`, `admin_update_generation`, `admin_update_caption`) that raise unless the caller is a superadmin. Even someone holding the public anon key and their own session can't read other people's data or call the admin functions.
+3. **The database** (`supabase/admin.sql`) is the real boundary. Superadmin read access comes from row-level security policies that call `is_superadmin()`. Writes go through `security definer` functions (`admin_create_generation`, `admin_update_generation`, `admin_update_caption`, `admin_set_superadmin`) that raise unless the caller is a superadmin. Even someone holding the public anon key and their own session can't read other people's data or call the admin functions.
 
 Members can't make themselves admins:
 - `insert`/`update` on `profiles` is granted only column by column (not `is_superadmin`).
 - A trigger rejects any change to the flag that comes from the `anon` or `authenticated` roles.
+- The only way to change it through the API is `admin_set_superadmin()`. It requires the caller to already be a superadmin and refuses to let anyone remove their own access, so the panel can never end up with zero admins.
 
 ## The lockout question
 
@@ -45,7 +46,7 @@ No. The flag is set **outside the app**, with access the app never has. Whoever 
 update public.profiles set is_superadmin = true where email = 'you@example.com';
 ```
 
-Sign in to Punchline once first, so a profile row exists for that Google account. Later admins are promoted the same way. There is deliberately no "make admin" button, so a bug in the website can never hand out admin rights.
+Sign in to Punchline once first, so a profile row exists for that Google account. After that first admin exists, everyone else is promoted from inside the panel (Users → Make admin), which only an existing superadmin can do.
 
 ## Setup
 
