@@ -1,0 +1,62 @@
+# Punchline Backstage
+
+The admin area for [Punchline](https://github.com/alexanderdong8/humor-project), the AI caption game. It reads and manages the same Supabase database. Built with Next.js 16 (App Router) and Supabase, deployed on Vercel.
+
+## What it does
+
+- **Overview** (`/`): statistics built from one database call (`admin_stats()`):
+  - total votes cast (the hero number) and member, upload, caption, remix, and joke counts
+  - 30 days of uploads and votes
+  - a weekday-by-hour activity heatmap with its peak
+  - **"Does the AI's first draft win?"**: which of Gemini's four captions won each caption battle, against the 25% you'd expect by chance
+  - caption styles and their win rates, and remix moods with how often the remix beat the original
+  - where daily themes came from (X vs. Google Trends) and which Gemini model answered
+  - a reel of the last two weeks of daily AI memes with the caption members ranked first
+  - daily-meme caption length vs. win rate, the most active members, and a hall of fame
+
+  Every chart has hover/focus tooltips and a "Show the numbers" table.
+- **Users** (`/users`, `/users/[id]`), read only: every profile with uploads, votes cast, and remixes; search by name or email; a page per member with their profile, uploads, and an activity timeline.
+- **AI media** (`/media`, `/media/new`, `/media/[id]`), create / read / update / delete:
+  - **Create:** pick an Imgflip meme template or upload a photo, let Gemini write four captions with the main app's prompt, edit them, choose the one that goes on the photo, then publish it or save it as a draft.
+  - **Read:** browse and filter everything (live uploads, drafts, daily memes), and see each post's captions, vote record, prompt, and model.
+  - **Update:** edit the theme, style, author, which caption is shown, any caption's text, and publish a draft.
+  - **Delete:** a post along with its captions, votes, and uploaded photo.
+- **Votes & ratings** (`/votes`), read only: every upload-vs-upload vote, daily-meme caption pick, and up/down rating, with who cast it and what won.
+
+## Who can get in
+
+Every route is behind Google sign-in **and** `profiles.is_superadmin = true`. It's checked in three places:
+
+1. **`proxy.ts`** runs on every request. With no session it redirects to `/login`; signed in without the flag, to `/denied`. Only `/login` and `/auth/callback` are reachable signed out.
+2. **`requireAdmin()`** runs in the admin layout and every page, and `adminOrNull()` in every server action, so nothing renders or writes without the check.
+3. **The database** (`supabase/admin.sql`) is the real boundary. Superadmin read access comes from row-level security policies that call `is_superadmin()`. Writes go through `security definer` functions (`admin_create_generation`, `admin_update_generation`, `admin_update_caption`) that raise unless the caller is a superadmin. Even someone holding the public anon key and their own session can't read other people's data or call the admin functions.
+
+Members can't make themselves admins:
+- `insert`/`update` on `profiles` is granted only column by column (not `is_superadmin`).
+- A trigger rejects any change to the flag that comes from the `anon` or `authenticated` roles.
+
+## The lockout question
+
+> If a database field is required to use the admin area, won't you be locked out?
+
+No. The flag is set **outside the app**, with access the app never has. Whoever owns the Supabase project can run SQL as the database owner, through the Supabase SQL editor, `psql` with the connection string, or the Supabase MCP server. That connection bypasses row-level security and isn't subject to the column grants or the trigger (they only stop the API roles). So the first superadmin is bootstrapped with one statement:
+
+```sql
+update public.profiles set is_superadmin = true where email = 'you@example.com';
+```
+
+Sign in to Punchline once first, so a profile row exists for that Google account. Later admins are promoted the same way. There is deliberately no "make admin" button, so a bug in the website can never hand out admin rights.
+
+## Setup
+
+1. Run `supabase/admin.sql` once as the database owner, then the bootstrap statement above.
+2. In Supabase → Authentication → URL Configuration, add the admin site's callback to **Redirect URLs**, e.g. `https://humor-project-admin*.vercel.app/**` and `http://localhost:3001/**`.
+3. Create `.env`:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable or anon key>
+   GEMINI_API_KEY=<key from aistudio.google.com/apikey>
+   ```
+4. `npm install`, then `npm run dev` and open http://localhost:3001.
+
+No service-role key is used anywhere. The admin site acts with the signed-in admin's own session, and the database decides what that session may do.

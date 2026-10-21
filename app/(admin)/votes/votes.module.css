@@ -1,0 +1,39 @@
+.toolbar {
+  margin-top: 1.25rem;
+}
+
+.post {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 200px;
+  max-width: 360px;
+  padding: 0.35rem;
+  border-radius: 10px;
+}
+
+.post[data-won] {
+  background: var(--good-soft);
+}
+
+.postText {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  font-size: 0.87rem;
+}
+
+.verdict {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.won {
+  color: var(--good);
+}
+
+.lost {
+  color: var(--faint);
+}

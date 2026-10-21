@@ -1,0 +1,290 @@
+/* Punchline Backstage: the admin area. Warm paper, a curtain-black wing, and
+   the main app's sun yellow as the one accent. */
+
+:root {
+  color-scheme: light;
+  --bg: #f6f2ea;
+  --surface: #ffffff;
+  --surface-2: #faf7f1;
+  --line: #e6dfd2;
+  --line-strong: #d3c9b7;
+  --ink: #1d1a16;
+  --muted: #5f584d;
+  --faint: #8d8578;
+
+  --wing: #17140f;
+  --wing-ink: #f3ede2;
+  --wing-muted: #a49b8b;
+  --wing-line: #2c2720;
+
+  --sun: #ffd23f;
+  --sun-soft: #fff3c4;
+  --sun-ink: #6b5200;
+
+  /* Status: reserved, always with a word beside it. */
+  --good: #127a4f;
+  --good-soft: #dcf3e8;
+  --warn: #8a5a00;
+  --warn-soft: #fdeecf;
+  --danger: #b4321a;
+  --danger-soft: #fbe3dd;
+
+  /* Charts: validated categorical slots (light), sequential blue ramp. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --seq-0: #f1ede6;
+  --seq-1: #cde2fb;
+  --seq-2: #9ec5f4;
+  --seq-3: #5598e7;
+  --seq-4: #256abf;
+  --seq-5: #104281;
+  --grid: #ece6db;
+
+  --font-display: var(--font-bricolage), "Segoe UI", sans-serif;
+  --font-body: var(--font-plex), "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 0 rgba(29, 26, 22, 0.04), 0 8px 24px -16px rgba(29, 26, 22, 0.25);
+  --wing-width: 248px;
+  --gutter: clamp(16px, 3.5vw, 40px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --bg: #12100d;
+    --surface: #1e1b17;
+    --surface-2: #191612;
+    --line: #2f2a23;
+    --line-strong: #40392f;
+    --ink: #f1ece3;
+    --muted: #b9b0a1;
+    --faint: #8a8173;
+    --wing: #0b0a08;
+    --wing-line: #221e18;
+    --sun-soft: #3a3016;
+    --sun-ink: #ffd23f;
+    --good: #4cc995;
+    --good-soft: #15302a;
+    --warn: #f0b54a;
+    --warn-soft: #362a12;
+    --danger: #f08a73;
+    --danger-soft: #3a1d17;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --seq-0: #26221c;
+    --seq-1: #184f95;
+    --seq-2: #1c5cab;
+    --seq-3: #2a78d6;
+    --seq-4: #5598e7;
+    --seq-5: #9ec5f4;
+    --grid: #2a251f;
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: 2px;
+}
+
+/* Chart marks with a tooltip (see components/chart-tips.tsx). */
+[data-tip] {
+  cursor: default;
+}
+
+[data-tip]:focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: 1px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  min-height: 38px;
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #000;
+}
+
+.btn-sun {
+  border-color: #1d1a16;
+  background: var(--sun);
+  color: #1d1a16;
+}
+
+.btn-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.btn-sm {
+  min-height: 32px;
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Form fields */
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.field > span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+textarea.input {
+  resize: vertical;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--series-1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--series-1) 18%, transparent);
+}
+
+/* Status pills: always a word, never color alone. */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill-good {
+  background: var(--good-soft);
+  border-color: transparent;
+  color: var(--good);
+}
+
+.pill-warn {
+  background: var(--warn-soft);
+  border-color: transparent;
+  color: var(--warn);
+}
+
+.pill-sun {
+  background: var(--sun-soft);
+  border-color: transparent;
+  color: var(--sun-ink);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
