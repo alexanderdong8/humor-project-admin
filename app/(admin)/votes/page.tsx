@@ -33,7 +33,6 @@ export default async function VotesPage(props: PageProps<"/votes">) {
   const { supabase } = await requireAdmin();
   const searchParams = await props.searchParams;
   const tabParam = first(searchParams.tab);
-  const tab: Tab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : "uploads";
   const requested = Number(first(searchParams.page));
   const page = Number.isInteger(requested) && requested > 0 ? requested : 1;
   const from = (page - 1) * PAGE_SIZE;
@@ -51,6 +50,10 @@ export default async function VotesPage(props: PageProps<"/votes">) {
     ratings: (upCount ?? 0) + (downCount ?? 0),
   };
   const ratingTotal = (upCount ?? 0) + (downCount ?? 0);
+  // With no tab chosen, open the first kind of vote that has any rows.
+  const tab: Tab = TABS.some((t) => t.id === tabParam)
+    ? (tabParam as Tab)
+    : (TABS.find((t) => counts[t.id] > 0)?.id ?? "uploads");
 
   // Rows for the selected tab, then everything they point at in a few batched reads.
   const current = TABS.find((t) => t.id === tab)!;

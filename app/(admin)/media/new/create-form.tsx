@@ -163,7 +163,13 @@ export function CreateForm({ userId, templates, defaultTheme, defaultAuthor, voi
           <button type="button" className="btn btn-primary" onClick={generate} disabled={!imageUrl || generating}>
             {generating ? "Gemini is writing…" : hasCaption ? "↻ Write 4 new captions" : "✨ Write 4 captions with Gemini"}
           </button>
-          <span className={ui.muted}>{ai ? `Written by ${ai.model}. Edit them freely.` : "Or type your own below."}</span>
+          <span className={ui.muted} role="status">
+            {generating
+              ? "Usually about 10 seconds."
+              : ai
+                ? `Written by ${ai.model}. Edit them freely.`
+                : "Or type your own below."}
+          </span>
         </div>
 
         <fieldset className={styles.steps}>

@@ -372,7 +372,7 @@ export function OverviewView({ s }: { s: Stats }) {
                   )}
                   <span className={styles.personName}>{fullName(p)}</span>
                   <span className={`${styles.personStat} mono`}>
-                    {p.votes}v · {p.uploads}u
+                    {plural(p.votes, "vote")} · {plural(p.uploads, "upload")}
                   </span>
                 </Link>
               </li>
@@ -399,7 +399,7 @@ export function OverviewView({ s }: { s: Stats }) {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={h.image_url} alt="" className={ui.thumb} loading="lazy" />
                       <span className={`${styles.personName} ${ui.clamp}`}>{h.caption ?? "…"}</span>
-                      <span className={`${styles.personStat} mono`}>{rate === null ? "new" : `${rate}%`}</span>
+                      <span className={`${styles.personStat} mono`}>{rate === null ? "no votes" : `${rate}% wins`}</span>
                     </Link>
                   </li>
                 );

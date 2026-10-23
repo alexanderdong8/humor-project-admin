@@ -151,6 +151,7 @@
   }
 
   .wing {
+    position: relative;
     z-index: 20;
     min-width: 0;
     flex-direction: row;

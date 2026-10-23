@@ -90,7 +90,11 @@ export default async function UserPage(props: PageProps<"/users/[id]">) {
         <StatTile label="Live uploads" value={live.length} note={`${plural((posts?.length ?? 0) - live.length, "draft")}`} />
         <StatTile label="Votes cast" value={votesCast} note={`${battles?.length ?? 0} uploads · ${duels?.length ?? 0} daily · ${ratings?.length ?? 0} ratings`} />
         <StatTile label="Remixes" value={remixes?.length ?? 0} />
-        <StatTile label="Member since" value={formatDate(profile.created_at)} note={timeAgo(profile.created_at)} />
+        <StatTile
+          label="Member since"
+          value={formatDate(profile.created_at)}
+          note={plural(Math.max(1, Math.round((Date.now() - Date.parse(profile.created_at)) / 86_400_000)), "day") + " on Punchline"}
+        />
       </div>
 
       <section className={`${ui.card} ${styles.section}`}>

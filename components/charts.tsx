@@ -5,11 +5,11 @@ import styles from "./charts.module.css";
 /** Categorical slots in fixed order (validated palette, see globals.css). */
 export const SERIES = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)"];
 
-/** A clean axis maximum: 1, 2, 5, 10, 20, 50… at or above the data's max. */
+/** A clean axis maximum (1, 2, 4, 6, 8, 10, 20, 40…) whose half is also a whole number. */
 function niceMax(max: number) {
   if (max <= 0) return 1;
   const pow = 10 ** Math.floor(Math.log10(max));
-  for (const step of [1, 2, 5, 10]) if (step * pow >= max) return step * pow;
+  for (const step of [1, 2, 4, 6, 8, 10]) if (step * pow >= max) return step * pow;
   return 10 * pow;
 }
 

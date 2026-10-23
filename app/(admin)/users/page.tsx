@@ -110,17 +110,21 @@ export default async function UsersPage(props: PageProps<"/users">) {
               <tr>
                 <th scope="col">Member</th>
                 <th scope="col">Role</th>
-                <th scope="col">Joined</th>
+                <th scope="col" className={ui.hideNarrow}>
+                  Joined
+                </th>
                 <th scope="col" className={ui.num}>
                   Uploads
                 </th>
                 <th scope="col" className={ui.num}>
                   Votes cast
                 </th>
-                <th scope="col" className={ui.num}>
+                <th scope="col" className={`${ui.num} ${ui.hideNarrow}`}>
                   Remixes
                 </th>
-                <th scope="col">Profile updated</th>
+                <th scope="col" className={ui.hideNarrow}>
+                  Profile updated
+                </th>
                 <th scope="col">
                   <span className="sr-only">Admin access</span>
                 </th>
@@ -150,11 +154,11 @@ export default async function UsersPage(props: PageProps<"/users">) {
                     <td>
                       {p.is_superadmin ? <span className="pill pill-sun">★ Superadmin</span> : <span className="pill">Member</span>}
                     </td>
-                    <td className={ui.nowrap}>{formatDate(p.created_at)}</td>
+                    <td className={`${ui.nowrap} ${ui.hideNarrow}`}>{formatDate(p.created_at)}</td>
                     <td className={ui.num}>{uploads.get(p.id) ?? 0}</td>
                     <td className={ui.num}>{votesFor(p.id)}</td>
-                    <td className={ui.num}>{remixCounts.get(p.id) ?? 0}</td>
-                    <td className={`${ui.nowrap} ${ui.muted}`}>{timeAgo(p.updated_at)}</td>
+                    <td className={`${ui.num} ${ui.hideNarrow}`}>{remixCounts.get(p.id) ?? 0}</td>
+                    <td className={`${ui.nowrap} ${ui.muted} ${ui.hideNarrow}`}>{timeAgo(p.updated_at)}</td>
                     <td className={ui.nowrap}>
                       <AdminToggle userId={p.id} name={name} isAdmin={p.is_superadmin} isSelf={p.id === user.id} compact />
                     </td>

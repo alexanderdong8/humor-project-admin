@@ -8,6 +8,9 @@ import ui from "@/components/ui.module.css";
 
 export const metadata: Metadata = { title: "Create AI media" };
 
+// Caption writing can fall back across Gemini models; give its server action room.
+export const maxDuration = 120;
+
 /** Imgflip's 100 most-captioned meme templates (cached for a day). */
 async function getTemplates(): Promise<Template[]> {
   try {

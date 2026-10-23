@@ -167,6 +167,7 @@
 /* Tables */
 
 .tableWrap {
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -287,6 +288,11 @@
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tabs a {
@@ -367,6 +373,12 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.88rem;
+}
+
+@media (max-width: 700px) {
+  .hideNarrow {
+    display: none;
+  }
 }
 
 /* Key-value list */
