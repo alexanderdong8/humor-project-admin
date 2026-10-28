@@ -53,26 +53,44 @@ export async function updateImage(id: string, description: string): Promise<Imag
   return { ok: true, message: "Saved." };
 }
 
-/** Deletes the file and its library entry, unless a post still shows it. */
-export async function deleteImage(id: string): Promise<ImageResult> {
+/**
+ * Deletes the file and its library entry. A photo that posts still show only
+ * goes when the admin confirmed deleting those posts too (their captions,
+ * votes, and logs cascade), so no post is ever left pointing at a missing file.
+ */
+export async function deleteImage(id: string, withPosts: number): Promise<ImageResult> {
   const admin = await adminOrNull();
   if (!admin) return { ok: false, message: "Superadmins only." };
   if (!UUID.test(id)) return { ok: false, message: "Unknown image." };
 
   const { data: image } = await admin.supabase.from("images").select("storage_path").eq("id", id).maybeSingle();
   if (!image) return { ok: false, message: "That image was already deleted." };
-  const { count } = await admin.supabase
-    .from("generations")
-    .select("id", { count: "exact", head: true })
-    .eq("image_path", image.storage_path);
-  if (count) {
-    return { ok: false, message: `${count} ${count === 1 ? "post uses" : "posts use"} this image. Delete ${count === 1 ? "it" : "them"} in AI media first.` };
+  const { data: posts } = await admin.supabase.from("generations").select("id").eq("image_path", image.storage_path);
+  const used = posts?.length ?? 0;
+  if (used !== withPosts) {
+    // Something changed since the page loaded; make the admin confirm what will actually happen.
+    return {
+      ok: false,
+      message: `This image is now in ${used} ${used === 1 ? "post" : "posts"}. Refresh the page and try again.`,
+    };
+  }
+
+  if (used > 0) {
+    const { error: postsError } = await admin.supabase
+      .from("generations")
+      .delete()
+      .in("id", posts!.map((p) => p.id));
+    if (postsError) return { ok: false, message: `Couldn't delete its posts: ${postsError.message}` };
   }
 
   const { error: storageError } = await admin.supabase.storage.from(BUCKET).remove([image.storage_path]);
   if (storageError) return { ok: false, message: `Couldn't delete the file: ${storageError.message}` };
+  // Member uploads leave the library with their post (a database trigger); library images go here.
   const { error } = await admin.supabase.from("images").delete().eq("id", id);
   if (error) return { ok: false, message: error.message };
+
   revalidatePath("/images");
-  return { ok: true, message: "Deleted." };
+  revalidatePath("/media");
+  revalidatePath("/");
+  return { ok: true, message: used > 0 ? `Deleted the image and ${used} ${used === 1 ? "post" : "posts"}.` : "Deleted." };
 }

@@ -55,7 +55,7 @@ export default async function ImagesPage(props: PageProps<"/images">) {
         <Link href="/media" className={ui.link}>
           AI media
         </Link>
-        . An image can only be deleted once no post uses it.
+        . Deleting an image that posts use deletes those posts too, after you confirm.
       </PageHead>
 
       <ImageUploader userId={user.id} />

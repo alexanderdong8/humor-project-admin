@@ -111,3 +111,13 @@
 .ghostDanger {
   color: var(--danger);
 }
+
+.confirmBox {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  background: var(--danger-soft);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}

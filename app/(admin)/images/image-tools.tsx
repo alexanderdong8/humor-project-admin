@@ -169,13 +169,33 @@ export function ImageActions({
           </button>
         </div>
       ) : mode === "delete" ? (
-        <div className={styles.editRow}>
-          <button type="button" className="btn btn-sm btn-danger" disabled={pending} onClick={() => run(() => deleteImage(id))}>
-            {pending ? "Deleting…" : "Delete file"}
-          </button>
-          <button type="button" className="btn btn-sm" onClick={() => setMode("idle")} disabled={pending}>
-            Keep
-          </button>
+        <div className={styles.confirmBox} role="alertdialog" aria-label="Confirm delete">
+          <p>
+            {usedBy > 0 ? (
+              <>
+                <strong>
+                  This photo is in {usedBy} {usedBy === 1 ? "post" : "posts"}.
+                </strong>{" "}
+                Deleting it also deletes {usedBy === 1 ? "that post" : "those posts"}, with {usedBy === 1 ? "its" : "their"}{" "}
+                captions and votes. This can&apos;t be undone.
+              </>
+            ) : (
+              "Delete this image file permanently? This can't be undone."
+            )}
+          </p>
+          <div className={styles.editRow}>
+            <button
+              type="button"
+              className="btn btn-sm btn-danger"
+              disabled={pending}
+              onClick={() => run(() => deleteImage(id, usedBy))}
+            >
+              {pending ? "Deleting…" : usedBy > 0 ? `Delete image + ${usedBy} ${usedBy === 1 ? "post" : "posts"}` : "Delete image"}
+            </button>
+            <button type="button" className="btn btn-sm" onClick={() => setMode("idle")} disabled={pending}>
+              Keep
+            </button>
+          </div>
         </div>
       ) : (
         <div className={styles.editRow}>
@@ -200,8 +220,6 @@ export function ImageActions({
               setResult(null);
               setMode("delete");
             }}
-            disabled={usedBy > 0}
-            title={usedBy > 0 ? "Posts still use this image" : undefined}
           >
             Delete
           </button>
