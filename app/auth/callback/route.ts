@@ -9,7 +9,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
-  if (!code) return NextResponse.redirect(`${origin}/login?error=signin_failed`);
+  if (!code) {
+    // A brand-new Google account that isn't on the sign-up allowlist is refused by the database.
+    const notAllowed = /saving new user|signup_not_allowed/i.test(searchParams.get("error_description") ?? "");
+    return NextResponse.redirect(`${origin}/login?error=${notAllowed ? "not_allowed" : "signin_failed"}`);
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
 import { newYorkDate } from "@/lib/format";
 import { VOICES } from "@/lib/voices";
-import { CreateForm, type Template } from "./create-form";
+import { CreateForm, type LibraryImage, type Template } from "./create-form";
 import ui from "@/components/ui.module.css";
 
 export const metadata: Metadata = { title: "Create AI media" };
@@ -22,12 +22,20 @@ async function getTemplates(): Promise<Template[]> {
   }
 }
 
-export default async function NewMediaPage() {
+export default async function NewMediaPage(props: PageProps<"/media/new">) {
   const { supabase, user } = await requireAdmin();
-  const [templates, { data: theme }] = await Promise.all([
+  const { image } = await props.searchParams;
+  const [templates, { data: theme }, { data: library }] = await Promise.all([
     getTemplates(),
     supabase.from("daily_themes").select("theme").eq("day", newYorkDate()).maybeSingle(),
+    supabase
+      .from("images")
+      .select("id, public_url, description")
+      .order("created_at", { ascending: false })
+      .limit(60)
+      .returns<{ id: string; public_url: string; description: string | null }[]>(),
   ]);
+  const images: LibraryImage[] = (library ?? []).map((i) => ({ id: i.id, url: i.public_url, description: i.description }));
 
   return (
     <>
@@ -47,6 +55,8 @@ export default async function NewMediaPage() {
       <CreateForm
         userId={user.id}
         templates={templates}
+        library={images}
+        initialImage={images.find((i) => i.id === image) ?? null}
         defaultTheme={theme?.theme ?? ""}
         defaultAuthor="Punchline AI"
         voices={Object.entries(VOICES).map(([value, v]) => ({ value, label: `${v.emoji} ${v.label}`, example: v.example }))}

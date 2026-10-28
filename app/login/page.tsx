@@ -29,7 +29,9 @@ export default async function LoginPage(props: PageProps<"/login">) {
         <GoogleButton />
         {typeof error === "string" && (
           <p className={styles.error} role="alert">
-            Sign-in didn&apos;t go through. Please try again.
+            {error === "not_allowed"
+              ? "That Google account isn't allowed to sign up for Punchline (see Access → Sign-up domains)."
+              : "Sign-in didn't go through. Please try again."}
           </p>
         )}
       </section>

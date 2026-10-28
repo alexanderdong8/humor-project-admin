@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CaptionWriterError, writeCaptions } from "@/lib/ai/caption-writer";
 import { fetchImage, isAllowedImageUrl } from "@/lib/ai/fetch-image";
+import { quietly, supabaseDb } from "@/lib/ai/pipeline";
 import { adminOrNull } from "@/lib/admin";
 import { supabaseUrl } from "@/lib/supabase/env";
 import { isVoice } from "@/lib/voices";
@@ -37,8 +38,11 @@ export async function generateCaptions(input: {
   voice: string;
   theme: string;
   templateName?: string;
-}): Promise<{ ok: true; captions: string[]; prompt: string; model: string } | { ok: false; error: string }> {
-  if (!(await adminOrNull())) return { ok: false, error: "Superadmins only." };
+}): Promise<
+  { ok: true; captions: string[]; prompt: string; model: string; requestId: string | null } | { ok: false; error: string }
+> {
+  const admin = await adminOrNull();
+  if (!admin) return { ok: false, error: "Superadmins only." };
   if (!isVoice(input.voice)) return { ok: false, error: "Pick a caption style." };
   if (!isAllowedImageUrl(input.imageUrl) || !imagePathFor(input.imageUrl)) {
     return { ok: false, error: "That image isn't from an allowed source." };
@@ -54,6 +58,9 @@ export async function generateCaptions(input: {
       context: name
         ? `The image is the "${name}" meme template. Write captions the way this meme is usually captioned.`
         : undefined,
+      // Same prompt chains, examples, terms, and models as Punchline; logged as an admin request.
+      db: supabaseDb(admin.supabase),
+      log: { source: "admin", imageUrl: input.imageUrl },
     });
     return { ok: true, ...result };
   } catch (error) {
@@ -108,7 +115,15 @@ export async function createMedia(_prev: ActionState, formData: FormData): Promi
     return { status: "error", message: error?.message ?? "Couldn't save." };
   }
 
+  const requestId = text(formData, "requestId", 36);
+  if (UUID.test(requestId)) {
+    await quietly(() =>
+      supabaseDb(admin.supabase).rpc("attach_generation_request", { p_id: requestId, p_generation: id }),
+    );
+  }
+
   revalidatePath("/media");
+  revalidatePath("/requests");
   revalidatePath("/");
   redirect(`/media/${id}?created=1`);
 }
@@ -161,13 +176,21 @@ export async function deleteMedia(id: string): Promise<ActionState> {
   const { data: deleted, error } = await admin.supabase.from("generations").delete().eq("id", id).select("id");
   if (error || !deleted?.length) return { status: "error", message: error?.message ?? "Couldn't delete." };
 
-  // Photos uploaded to our bucket are stored by path; template and stock images aren't ours to delete.
+  // A photo uploaded with a post goes with it. Library images stay (they can be captioned again),
+  // and template or stock images aren't ours to delete.
   if (post.image_path && !post.image_path.includes(":")) {
-    const { error: storageError } = await admin.supabase.storage.from("caption-photos").remove([post.image_path]);
-    if (storageError) console.error("[admin] photo cleanup failed", storageError);
+    const [{ data: library }, { count: stillUsed }] = await Promise.all([
+      admin.supabase.from("images").select("id").eq("storage_path", post.image_path).eq("source", "library").maybeSingle(),
+      admin.supabase.from("generations").select("id", { count: "exact", head: true }).eq("image_path", post.image_path),
+    ]);
+    if (!library && !stillUsed) {
+      const { error: storageError } = await admin.supabase.storage.from("caption-photos").remove([post.image_path]);
+      if (storageError) console.error("[admin] photo cleanup failed", storageError);
+    }
   }
 
   revalidatePath("/media");
+  revalidatePath("/images");
   revalidatePath("/");
   redirect("/media?deleted=1");
 }

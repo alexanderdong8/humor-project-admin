@@ -7,6 +7,7 @@ import ui from "@/components/ui.module.css";
 import styles from "../media.module.css";
 
 export type Template = { id: string; name: string; url: string; width: number; height: number };
+export type LibraryImage = { id: string; url: string; description: string | null };
 
 const TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 const MAX_BYTES = 6 * 1024 * 1024;
@@ -14,21 +15,26 @@ const MAX_BYTES = 6 * 1024 * 1024;
 type Props = {
   userId: string;
   templates: Template[];
+  library: LibraryImage[];
+  /** Preselected from the Images page ("Caption it"). */
+  initialImage?: LibraryImage | null;
   defaultTheme: string;
   defaultAuthor: string;
   voices: { value: string; label: string; example: string }[];
 };
 
-export function CreateForm({ userId, templates, defaultTheme, defaultAuthor, voices }: Props) {
-  const [source, setSource] = useState<"template" | "upload">(templates.length > 0 ? "template" : "upload");
-  const [imageUrl, setImageUrl] = useState("");
+export function CreateForm({ userId, templates, library, initialImage, defaultTheme, defaultAuthor, voices }: Props) {
+  const [source, setSource] = useState<"template" | "library" | "upload">(
+    initialImage ? "library" : templates.length > 0 ? "template" : "upload",
+  );
+  const [imageUrl, setImageUrl] = useState(initialImage?.url ?? "");
   const [templateName, setTemplateName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [voice, setVoice] = useState(voices[0]?.value ?? "groupchat");
   const [theme, setTheme] = useState(defaultTheme);
   const [captions, setCaptions] = useState(["", "", "", ""]);
   const [chosen, setChosen] = useState(0);
-  const [ai, setAi] = useState<{ prompt: string; model: string } | null>(null);
+  const [ai, setAi] = useState<{ prompt: string; model: string; requestId: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, startGenerating] = useTransition();
   const [state, action, saving] = useActionState<ActionState, FormData>(createMedia, { status: "idle" });
@@ -65,7 +71,7 @@ export function CreateForm({ userId, templates, defaultTheme, defaultAuthor, voi
       if (!result.ok) return setError(result.error);
       setCaptions([0, 1, 2, 3].map((i) => result.captions[i] ?? ""));
       setChosen(0);
-      setAi({ prompt: result.prompt, model: result.model });
+      setAi({ prompt: result.prompt, model: result.model, requestId: result.requestId });
     });
   }
 
@@ -77,6 +83,7 @@ export function CreateForm({ userId, templates, defaultTheme, defaultAuthor, voi
       <input type="hidden" name="templateName" value={templateName} />
       <input type="hidden" name="prompt" value={ai?.prompt ?? ""} />
       <input type="hidden" name="model" value={ai?.model ?? ""} />
+      <input type="hidden" name="requestId" value={ai?.requestId ?? ""} />
 
       <section className={`${ui.card} ${styles.step}`}>
         <h2 className={ui.cardTitle}>
@@ -86,12 +93,40 @@ export function CreateForm({ userId, templates, defaultTheme, defaultAuthor, voi
           <button type="button" aria-pressed={source === "template"} onClick={() => setSource("template")}>
             Meme template
           </button>
+          <button type="button" aria-pressed={source === "library"} onClick={() => setSource("library")}>
+            Image library
+          </button>
           <button type="button" aria-pressed={source === "upload"} onClick={() => setSource("upload")}>
             Upload a photo
           </button>
         </div>
 
-        {source === "template" ? (
+        {source === "library" ? (
+          library.length === 0 ? (
+            <div className={ui.empty}>The image library is empty. Upload one on the Images page or below.</div>
+          ) : (
+            <ul className={styles.templates}>
+              {library.map((img) => (
+                <li key={img.id}>
+                  <button
+                    type="button"
+                    aria-pressed={imageUrl === img.url}
+                    onClick={() => {
+                      setImageUrl(img.url);
+                      setTemplateName("");
+                      setError(null);
+                    }}
+                    title={img.description ?? "Library image"}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img.url} alt="" loading="lazy" />
+                    <span className={ui.clamp}>{img.description ?? "Untitled"}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : source === "template" ? (
           templates.length === 0 ? (
             <div className={ui.empty}>Imgflip&apos;s templates didn&apos;t load. Upload a photo instead.</div>
           ) : (
@@ -131,7 +166,11 @@ export function CreateForm({ userId, templates, defaultTheme, defaultAuthor, voi
           <div className={styles.preview}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imageUrl} alt="Selected image" />
-            <span className={ui.muted}>{templateName ? `“${templateName}” meme template` : "Your uploaded photo"}</span>
+            <span className={ui.muted}>
+              {templateName
+                ? `“${templateName}” meme template`
+                : (library.find((l) => l.url === imageUrl)?.description ?? "Your photo")}
+            </span>
           </div>
         )}
       </section>

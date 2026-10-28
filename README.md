@@ -23,6 +23,25 @@ The admin area for [Punchline](https://github.com/alexanderdong8/humor-project),
   - **Delete:** a post along with its captions, votes, and uploaded photo.
 - **Votes & ratings** (`/votes`), read only: every upload-vs-upload vote, daily-meme caption pick, and up/down rating, with who cast it and what won.
 
+### The AI pipeline (supabase/pipeline.sql)
+
+The caption writer in both apps is driven by data you manage here.
+
+- **Prompt chains** (`/chains`, `/chains/[slug]`): read the four caption-style chains and their steps (ground rules, task, image context, style, examples, theme, local terms), including the exact prompt each would send right now. **Read/update the mix**: how many of the daily meme's 4 captions each chain writes. The nightly job follows it.
+- **Terms** (`/terms`), CRUD: local words and places (Butler, JJ's, the 1 train...) added to every caption prompt.
+- **AI generation examples** (`/examples`), CRUD: example captions shown to the model, per style or for every style.
+- **LLM models** (`/models`), CRUD: which models are called, in fallback order, at what temperature. Turning one off takes it out of rotation on the next request. Also shows model health from the response log.
+- **LLM providers** (`/providers`), CRUD: where each provider's API lives and the *name* of its key's environment variable. Keys never go in the database.
+- **Generation requests** (`/requests`, `/requests/[id]`), read: every caption job (upload, remix, daily meme, Backstage) with status, model, and the post it produced.
+- **LLM responses** (`/responses`), read: every model call with its raw response, timing, and errors.
+
+Older posts were backfilled into the request log from their saved prompt and model.
+
+### Access and images
+
+- **Allowed sign-up domains** and **whitelisted email addresses** (`/access/domains`, `/access/emails`), CRUD. A trigger on `auth.users` refuses new accounts whose email is neither whitelisted nor on an allowed domain (subdomains included); existing members are never affected. Includes a "check an address" tool that runs the same check.
+- **Images** (`/images`), CRUD with upload: every photo in storage, member uploads (registered automatically by a trigger) and a library you upload to here. Edit descriptions, caption any image as new AI media, and delete images no post uses.
+
 ## Who can get in
 
 Every route is behind Google sign-in **and** `profiles.is_superadmin = true`. It's checked in three places:
@@ -50,7 +69,7 @@ Sign in to Punchline once first, so a profile row exists for that Google account
 
 ## Setup
 
-1. Run `supabase/admin.sql` once as the database owner, then the bootstrap statement above.
+1. Run `supabase/admin.sql` and then `supabase/pipeline.sql` once as the database owner, then the bootstrap statement above.
 2. In Supabase → Authentication → URL Configuration, add the admin site's callback to **Redirect URLs**, e.g. `https://humor-project-admin*.vercel.app/**` and `http://localhost:3001/**`.
 3. Create `.env`:
    ```

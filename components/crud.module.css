@@ -1,0 +1,93 @@
+.flash {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--good);
+}
+
+.addBox {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.editCell {
+  padding: 1rem !important;
+  background: var(--surface-2);
+}
+
+.form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.optional {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--faint);
+}
+
+.help {
+  font-size: 0.78rem;
+  color: var(--faint);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: end;
+  min-height: 40px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right !important;
+}
+
+.actions > * + * {
+  margin-left: 0.4rem;
+}
+
+.confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  white-space: normal;
+}
+
+.ghostDanger {
+  color: var(--danger);
+}
+
+.long {
+  min-width: 240px;
+  max-width: 520px;
+}
+
+.monoCell {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}

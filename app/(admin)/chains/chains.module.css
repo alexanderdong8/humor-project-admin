@@ -1,0 +1,202 @@
+.list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 1rem;
+  padding: 0;
+}
+
+.chain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: 100%;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s;
+}
+
+.chain:hover {
+  border-color: var(--ink);
+}
+
+.chainName {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.chainDesc {
+  flex: 1;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.chainMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Mix editor */
+
+.mix {
+  display: grid;
+  gap: 1rem;
+}
+
+.mixBar {
+  display: flex;
+  gap: 3px;
+  height: 18px;
+}
+
+.mixBar span {
+  flex: 1;
+  border-radius: 4px;
+}
+
+.mixEmpty {
+  border: 1.5px dashed var(--line-strong);
+}
+
+.mixRows {
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+}
+
+.mixRows li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mixSwatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.mixName {
+  flex: 1;
+  font-weight: 600;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+}
+
+.stepper button {
+  width: 34px;
+  height: 32px;
+  border: 0;
+  background: var(--surface);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  color: var(--faint);
+  cursor: not-allowed;
+}
+
+.stepper output {
+  min-width: 2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.mixFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+}
+
+.totalOk {
+  font-weight: 600;
+  color: var(--good);
+}
+
+.totalOff {
+  font-weight: 600;
+  color: var(--warn);
+}
+
+.saved {
+  font-weight: 600;
+  color: var(--good);
+}
+
+/* Steps */
+
+.steps {
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.stepNum {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.stepHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+}
+
+.template {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.placeholder {
+  padding: 0 0.15rem;
+  border-radius: 4px;
+  background: var(--sun-soft);
+  color: var(--sun-ink);
+}
+
+.preview {
+  max-height: 520px;
+}
